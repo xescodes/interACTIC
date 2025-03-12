@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qüestionari Interactiu</title>
+    <style>
+        /* Estils generals */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+            line-height: 1.6;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 2rem; /* Escalable segons la pantalla */
+            margin-bottom: 20px;
+        }
+        .question {
+            margin-bottom: 20px;
+        }
+        .question h3 {
+            margin-top: 0;
+            font-size: 1.25rem; /* Escalable */
+        }
+        .options label {
+            display: block;
+            margin: 10px 0;
+            font-size: 1rem; /* Escalable */
+        }
+        .result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .correct {
+            color: green;
+        }
+        .incorrect {
+            color: red;
+        }
+        .explanation {
+            margin-top: 10px;
+            font-style: italic;
+            color: #555;
+            font-size: 0.9rem; /* Escalable */
+        }
+
+        /* Botó */
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem; /* Escalable */
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Disseny responsive */
+        @media (max-width: 768px) {
+            /* Per pantalles petites (mòbils i tauletes) */
+            body {
+                margin: 10px;
+                font-size: 14px; /* Reduir el tamany del text */
+            }
+            h1 {
+                font-size: 1.5rem; /* Reduir el tamany del títol */
+            }
+            .question h3 {
+                font-size: 1rem; /* Reduir el tamany de les preguntes */
+            }
+            .options label {
+                font-size: 0.9rem; /* Reduir el tamany de les opcions */
+            }
+            button {
+                font-size: 0.9rem; /* Reduir el tamany del botó */
+                padding: 8px 16px; /* Reduir el padding del botó */
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Per pantalles molt petites (telèfons petits) */
+            body {
+                margin: 5px;
+                font-size: 12px; /* Reduir encara més el tamany del text */
+            }
+            h1 {
+                font-size: 1.2rem; /* Reduir encara més el tamany del títol */
+            }
+            .question h3 {
+                font-size: 0.9rem; /* Reduir encara més el tamany de les preguntes */
+            }
+            .options label {
+                font-size: 0.8rem; /* Reduir encara més el tamany de les opcions */
+            }
+            button {
+                font-size: 0.8rem; /* Reduir encara més el tamany del botó */
+                padding: 6px 12px; /* Reduir encara més el padding del botó */
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Qüestionari Interactiu</h1>
+    <div id="quiz-container">Carregant qüestionari...</div>
+    <button id="submit-btn">Verificar Respostes</button>
+    <div id="results"></div>
+
+    <script>
+        // Configuració de l'API
+        const sheetId = '1OHGZn1a5yr6AmPPLiy_vW30whbejsKyWTFgSSxRrzgY';
+        const apiKey = 'AIzaSyA6Nj2FGa-Vsom8HRPZxNlQQ3rE7PSLqPQ';
+
+        // URL per accedir al contingut del full de càlcul
+        const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:Z100?key=${apiKey}`;
+
+        // Funció per carregar les dades del full de càlcul
+        fetch(sheetUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const rows = data.values;
+                if (!rows || rows.length === 0) {
+                    throw new Error("No s'han trobat dades en el full de càlcul.");
+                }
+
+                // Processar les dades per generar el qüestionari
+                generateQuiz(rows);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('quiz-container').innerHTML = `<p style="color: red;">Error en carregar les dades: ${error.message}</p>`;
+            });
+
+        function generateQuiz(rows) {
+            const container = document.getElementById('quiz-container');
+            let quizHTML = '';
+
+            // Ignorar la primera fila (encapçalats)
+            rows = rows.slice(1);
+
+            // Recorrer les files per generar les preguntes
+            rows.forEach((row, index) => {
+                const [question, optionA, optionB, optionC, optionD, correctAnswer, explanation] = row;
+
+                quizHTML += `
+                    <div class="question" id="question-${index}">
+                        <h3>${question}</h3>
+                        <div class="options">
+                            <label><input type="radio" name="q${index}" value="A"> ${optionA}</label>
+                            <label><input type="radio" name="q${index}" value="B"> ${optionB}</label>
+                            <label><input type="radio" name="q${index}" value="C"> ${optionC}</label>
+                            <label><input type="radio" name="q${index}" value="D"> ${optionD}</label>
+                        </div>
+                        <div class="result" id="result-${index}"></div>
+                        <div class="explanation" id="explanation-${index}"></div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = quizHTML;
+
+            // Afegir funció al botó de verificació
+            document.getElementById('submit-btn').addEventListener('click', () => verifyAnswers(rows));
+        }
+
+        function verifyAnswers(rows) {
+            let score = 0;
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = '';
+
+            // Ignorar la primera fila (encapçalats) també aquí
+            rows = rows.slice(1);
+
+            rows.forEach((row, index) => {
+                const [question, optionA, optionB, optionC, optionD, correctAnswer, explanation] = row;
+                const selectedOption = document.querySelector(`input[name="q${index}"]:checked`);
+                const resultDiv = document.getElementById(`result-${index}`);
+                const explanationDiv = document.getElementById(`explanation-${index}`);
+
+                if (selectedOption && selectedOption.value === correctAnswer) {
+                    resultDiv.innerHTML = '<span class="correct">Correcte!</span>';
+                    score++;
+                } else {
+                    resultDiv.innerHTML = '<span class="incorrect">Incorrecte</span>';
+                    explanationDiv.innerHTML = `Explicació: ${explanation}`;
+                }
+            });
+
+            // Mostrar puntuació final
+            resultsContainer.innerHTML = `<h2>Puntuació Final: ${score}/${rows.length}</h2>`;
+        }
+    </script>
+</body>
+</html>
