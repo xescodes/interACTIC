@@ -78,8 +78,8 @@
         // Configuració de l'API
         const sheetId = '1OHGZn1a5yr6AmPPLiy_vW30whbejsKyWTFgSSxRrzgY';
         const apiKey = 'AIzaSyA6Nj2FGa-Vsom8HRPZxNlQQ3rE7PSLqPQ';
-        // Correcció de la URL de l'API de Google Sheets
-        const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:G10?key=${apiKey}`;
+        // URL de l'API de Google Sheets per a 25 preguntes
+        const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:G26?key=${apiKey}`;
 
         // Carregar les dades del full de càlcul
         fetch(sheetUrl)
@@ -105,16 +105,10 @@
             .catch(error => {
                 console.error('Error:', error);
 
-                // Alternativa: Utilitzar dades locals si hi ha un error
-                const localRows = [
-                    ["Quina és la capital de França?", "Madrid", "París", "Roma", "Berlín", "B", "La capital de França és París."],
-                    ["Quin és el símbol de l'oxigen?", "H", "O", "C", "N", "B", "L'oxigen té el símbol químic O."]
-                ];
+                // Mostrar missatge d'error si no es poden carregar les dades
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('quiz-container').style.display = 'block';
-                document.getElementById('submit-btn').style.display = 'block';
-                document.getElementById('quiz-container').innerHTML = `<p style="color: orange;">Error en carregar les dades. S'estan utilitzant dades locals.</p>`;
-                generateQuiz(localRows);
+                document.getElementById('quiz-container').innerHTML = `<p style="color: red;">Error en carregar les dades del qüestionari. Si el problema persisteix, contacteu amb l'administrador.</p>`;
             });
 
         function generateQuiz(rows) {
