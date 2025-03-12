@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Qüestionari Interactiu</title>
 
-    <!-- Afegim un favicon buit per evitar errors -->
+    <!-- Favicon buit -->
     <link rel="icon" href="data:," type="image/x-icon">
 
     <style>
@@ -21,20 +21,15 @@
         h1 {
             text-align: center;
             color: #333;
-            font-size: 2rem; /* Escalable segons la pantalla */
+            font-size: 2rem;
             margin-bottom: 20px;
         }
         .question {
             margin-bottom: 20px;
         }
-        .question h3 {
-            margin-top: 0;
-            font-size: 1.25rem; /* Escalable */
-        }
         .options label {
             display: block;
             margin: 10px 0;
-            font-size: 1rem; /* Escalable */
         }
         .result {
             margin-top: 20px;
@@ -50,10 +45,7 @@
             margin-top: 10px;
             font-style: italic;
             color: #555;
-            font-size: 0.9rem; /* Escalable */
         }
-
-        /* Botó */
         button {
             display: block;
             margin: 20px auto;
@@ -63,72 +55,32 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 1rem; /* Escalable */
-            transition: background-color 0.3s ease;
         }
         button:hover {
             background-color: #0056b3;
         }
-
-        /* Disseny responsive */
-        @media (max-width: 768px) {
-            /* Per pantalles petites (mòbils i tauletes) */
-            body {
-                margin: 10px;
-                font-size: 14px; /* Reduir el tamany del text */
-            }
-            h1 {
-                font-size: 1.5rem; /* Reduir el tamany del títol */
-            }
-            .question h3 {
-                font-size: 1rem; /* Reduir el tamany de les preguntes */
-            }
-            .options label {
-                font-size: 0.9rem; /* Reduir el tamany de les opcions */
-            }
-            button {
-                font-size: 0.9rem; /* Reduir el tamany del botó */
-                padding: 8px 16px; /* Reduir el padding del botó */
-            }
-        }
-
-        @media (max-width: 480px) {
-            /* Per pantalles molt petites (telèfons petits) */
-            body {
-                margin: 5px;
-                font-size: 12px; /* Reduir encara més el tamany del text */
-            }
-            h1 {
-                font-size: 1.2rem; /* Reduir encara més el tamany del títol */
-            }
-            .question h3 {
-                font-size: 0.9rem; /* Reduir encara més el tamany de les preguntes */
-            }
-            .options label {
-                font-size: 0.8rem; /* Reduir encara més el tamany de les opcions */
-            }
-            button {
-                font-size: 0.8rem; /* Reduir encara més el tamany del botó */
-                padding: 6px 12px; /* Reduir encara més el padding del botó */
-            }
+        /* Indicador de càrrega */
+        #loading {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #555;
         }
     </style>
 </head>
 <body>
     <h1>Qüestionari Interactiu</h1>
-    <div id="quiz-container">Carregant qüestionari...</div>
-    <button id="submit-btn">Verificar Respostes</button>
+    <div id="loading">Carregant...</div>
+    <div id="quiz-container" style="display: none;"></div>
+    <button id="submit-btn" style="display: none;">Verificar Respostes</button>
     <div id="results"></div>
 
     <script>
         // Configuració de l'API
         const sheetId = '1OHGZn1a5yr6AmPPLiy_vW30whbejsKyWTFgSSxRrzgY';
         const apiKey = 'AIzaSyA6Nj2FGa-Vsom8HRPZxNlQQ3rE7PSLqPQ';
+        const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:G10?key=${apiKey}`;
 
-        // URL per accedir al contingut del full de càlcul
-        const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:Z100?key=${apiKey}`;
-
-        // Funció per carregar les dades del full de càlcul
+        // Carregar les dades del full de càlcul
         fetch(sheetUrl)
             .then(response => {
                 if (!response.ok) {
@@ -137,13 +89,16 @@
                 return response.json();
             })
             .then(data => {
-                console.log("Dades rebudes:", data); // Debugging
+                console.log("Dades rebudes:", data);
                 const rows = data.values;
                 if (!rows || rows.length === 0) {
                     throw new Error("No s'han trobat dades en el full de càlcul.");
                 }
 
-                // Processar les dades per generar el qüestionari
+                // Amagar l'indicador de càrrega i mostrar el qüestionari
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('quiz-container').style.display = 'block';
+                document.getElementById('submit-btn').style.display = 'block';
                 generateQuiz(rows);
             })
             .catch(error => {
@@ -154,6 +109,9 @@
                     ["Quina és la capital de França?", "Madrid", "París", "Roma", "Berlín", "B", "La capital de França és París."],
                     ["Quin és el símbol de l'oxigen?", "H", "O", "C", "N", "B", "L'oxigen té el símbol químic O."]
                 ];
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('quiz-container').style.display = 'block';
+                document.getElementById('submit-btn').style.display = 'block';
                 document.getElementById('quiz-container').innerHTML = `<p style="color: orange;">Error en carregar les dades. S'estan utilitzant dades locals.</p>`;
                 generateQuiz(localRows);
             });
