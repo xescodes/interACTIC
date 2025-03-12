@@ -4,36 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Qüestionari Interactiu</title>
-
-    <!-- Favicon buit -->
     <link rel="icon" href="data:," type="image/x-icon">
-
     <style>
-        /* Estils generals */
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 0;
-            background-color: #f4f4f9;
-            color: #333;
             line-height: 1.6;
+            margin: 20px;
         }
         h1 {
-            text-align: center;
             color: #333;
-            font-size: 2rem;
-            margin-bottom: 20px;
         }
         .question {
             margin-bottom: 20px;
         }
         .options label {
             display: block;
-            margin: 10px 0;
+            margin-bottom: 5px;
         }
         .result {
-            margin-top: 20px;
-            font-weight: bold;
+            margin-top: 10px;
         }
         .correct {
             color: green;
@@ -42,28 +31,8 @@
             color: red;
         }
         .explanation {
-            margin-top: 10px;
-            font-style: italic;
-            color: #555;
-        }
-        button {
-            display: block;
-            margin: 20px auto;
-            padding: 10px 20px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        /* Indicador de càrrega */
-        #loading {
-            text-align: center;
-            font-size: 1.5rem;
-            color: #555;
+            margin-top: 5px;
+            color: #666;
         }
     </style>
 </head>
@@ -75,99 +44,89 @@
     <div id="results"></div>
 
     <script>
-        // Configuració de l'API
         const sheetId = '1OHGZn1a5yr6AmPPLiy_vW30whbejsKyWTFgSSxRrzgY';
         const apiKey = 'AIzaSyA6Nj2FGa-Vsom8HRPZxNlQQ3rE7PSLqPQ';
-        // URL de l'API de Google Sheets per a 25 preguntes
         const sheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:G26?key=${apiKey}`;
 
-        // Carregar les dades del full de càlcul
         fetch(sheetUrl)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                console.log("Dades rebudes:", data);
-                const rows = data.values;
-                if (!rows || rows.length === 0) {
-                    throw new Error("No s'han trobat dades en el full de càlcul.");
-                }
+                const rows = data.values.slice(1); // Eliminem capçalera
+                
+                // Verificació d'estructura
+                rows.forEach((row, index) => {
+                    if (row.length < 7) {
+                        console.error(`Falta data a la pregunta ${index + 1}:`, row);
+                        throw new Error(`Pregunta ${index + 1} mal formada`);
+                    }
+                });
 
-                // Amagar l'indicador de càrrega i mostrar el qüestionari
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('quiz-container').style.display = 'block';
                 document.getElementById('submit-btn').style.display = 'block';
+                
                 generateQuiz(rows);
             })
             .catch(error => {
                 console.error('Error:', error);
-
-                // Mostrar missatge d'error si no es poden carregar les dades
                 document.getElementById('loading').style.display = 'none';
-                document.getElementById('quiz-container').style.display = 'block';
-                document.getElementById('quiz-container').innerHTML = `<p style="color: red;">Error en carregar les dades del qüestionari. Si el problema persisteix, contacteu amb l'administrador.</p>`;
+                document.getElementById('quiz-container').innerHTML = 
+                    `<p style="color: red;">Error carregant dades: ${error.message}</p>`;
             });
 
         function generateQuiz(rows) {
             const container = document.getElementById('quiz-container');
-            let quizHTML = '';
-
-            // Ignorar la primera fila (encapçalats)
-            rows = rows.slice(1);
-
-            // Recorrer les files per generar les preguntes
-            rows.forEach((row, index) => {
-                const [question, optionA, optionB, optionC, optionD, correctAnswer, explanation] = row;
-
-                quizHTML += `
-                    <div class="question" id="question-${index}">
-                        <h3>${question}</h3>
+            container.innerHTML = rows.map((row, index) => {
+                const [question, A, B, C, D, correcta, explicacio] = row;
+                return `
+                    <div class="question">
+                        <h3>${index + 1}. ${question}</h3>
                         <div class="options">
-                            <label><input type="radio" name="q${index}" value="A"> ${optionA}</label>
-                            <label><input type="radio" name="q${index}" value="B"> ${optionB}</label>
-                            <label><input type="radio" name="q${index}" value="C"> ${optionC}</label>
-                            <label><input type="radio" name="q${index}" value="D"> ${optionD}</label>
+                            ${['A','B','C','D'].map(lletra => `
+                                <label>
+                                    <input type="radio" name="q${index}" value="${lletra}">
+                                    ${row[['A','B','C','D'].indexOf(lletra) + 1]}
+                                </label>
+                            `).join('')}
                         </div>
                         <div class="result" id="result-${index}"></div>
                         <div class="explanation" id="explanation-${index}"></div>
                     </div>
                 `;
-            });
+            }).join('');
 
-            container.innerHTML = quizHTML;
-
-            // Afegir funció al botó de verificació
-            document.getElementById('submit-btn').addEventListener('click', () => verifyAnswers(rows));
+            document.getElementById('submit-btn').onclick = () => verifyAnswers(rows);
         }
 
         function verifyAnswers(rows) {
-            let score = 0;
-            const resultsContainer = document.getElementById('results');
-            resultsContainer.innerHTML = '';
-
-            // Ignorar la primera fila (encapçalats) també aquí
-            rows = rows.slice(1);
-
+            let correctes = 0;
             rows.forEach((row, index) => {
-                const [question, optionA, optionB, optionC, optionD, correctAnswer, explanation] = row;
-                const selectedOption = document.querySelector(`input[name="q${index}"]:checked`);
+                const correcta = extractLetter(row[5].trim().toUpperCase()); // Extrae solo la letra de la respuesta correcta
+                const seleccionada = document.querySelector(`input[name="q${index}"]:checked`)?.value.toUpperCase() || '';
+                
                 const resultDiv = document.getElementById(`result-${index}`);
                 const explanationDiv = document.getElementById(`explanation-${index}`);
 
-                if (selectedOption && selectedOption.value === correctAnswer) {
-                    resultDiv.innerHTML = '<span class="correct">Correcte!</span>';
-                    score++;
+                if (seleccionada === correcta) {
+                    resultDiv.innerHTML = '<span class="correct">✓ Correcte</span>';
+                    correctes++;
                 } else {
-                    resultDiv.innerHTML = '<span class="incorrect">Incorrecte</span>';
-                    explanationDiv.innerHTML = `Explicació: ${explanation}`;
+                    resultDiv.innerHTML = `
+                        <span class="incorrect">✗ Incorrecte</span>
+                        <br><small>Resposta correcta: ${row[5]}</small>
+                    `;
+                    explanationDiv.innerHTML = row[6] || 'Sense explicació';
                 }
             });
 
-            // Mostrar puntuació final
-            resultsContainer.innerHTML = `<h2>Puntuació Final: ${score}/${rows.length}</h2>`;
+            document.getElementById('results').innerHTML = `
+                <h2>Resultat: ${correctes}/${rows.length}</h2>
+                <p>Percentatge d'èxit: ${Math.round((correctes/rows.length)*100)}%</p>
+            `;
+        }
+
+        function extractLetter(answer) {
+            return answer.match(/[A-D]/)[0]; // Extrae la primera letra que sea A, B, C o D
         }
     </script>
 </body>
