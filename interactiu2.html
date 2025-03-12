@@ -133,6 +133,7 @@
                 return response.json();
             })
             .then(data => {
+                console.log("Dades rebudes:", data); // Debugging
                 const rows = data.values;
                 if (!rows || rows.length === 0) {
                     throw new Error("No s'han trobat dades en el full de càlcul.");
@@ -143,7 +144,14 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                document.getElementById('quiz-container').innerHTML = `<p style="color: red;">Error en carregar les dades: ${error.message}</p>`;
+
+                // Alternativa: Utilitzar dades locals si hi ha un error
+                const localRows = [
+                    ["Quina és la capital de França?", "Madrid", "París", "Roma", "Berlín", "B", "La capital de França és París."],
+                    ["Quin és el símbol de l'oxigen?", "H", "O", "C", "N", "B", "L'oxigen té el símbol químic O."]
+                ];
+                document.getElementById('quiz-container').innerHTML = `<p style="color: orange;">Error en carregar les dades. S'estan utilitzant dades locals.</p>`;
+                generateQuiz(localRows);
             });
 
         function generateQuiz(rows) {
